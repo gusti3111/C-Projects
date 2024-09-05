@@ -29,6 +29,7 @@ struct Barang*NewBarang(int id,char*name,int stock,float price){
 
 
 //Tambahkan barang baru diawal
+//lihat ebook halaman 189 untuk pseudocode
 void TambahkanBarangAwal(struct Barang **head,int id,char *name,int stock,float price){
   struct Barang *avail=NewBarang(id,name,stock,price);
   if(avail == NULL){
@@ -63,47 +64,70 @@ void TambahkanBarangAwal(struct Barang **head,int id,char *name,int stock,float 
  }
 
 
-void hapusBarang(struct Barang** head, char *name){
-
-    struct Barang* ptr = *head;
-
-    // Mencari node dengan ID yang sesuai
-    while (ptr != NULL && strcmp(ptr->name,name) != 0) {
-        ptr = ptr->next;
-    }
-
-    // Jika node dengan ID yang dimaksud tidak ditemukan
-    if (ptr == NULL) {
-        printf("Barang dengan nama %s tidak ditemukan.\n", name);
+// fungsi hapus barang lihat ebook halaman 194 untuk pseudocode
+void hapusBarangByName(struct Barang** head, char *name) {
+    //STEP 1: cek list apakah kosong atau tidak
+    if (*head == NULL) { 
+        printf("UNDERFLOW - Tidak ada bahan yang dapat dihapus.\n");
         return;
     }
 
-    // Jika node yang akan dihapus adalah head (node pertama)
+    // Step 2: buat pointer PTR
+
+    struct Barang* ptr = *head; 
+    
+    // Step 3 dan Step 4: mencari node / data barang yang dihapus berdasarkan id
+    while (ptr != NULL && strcmp(ptr->name,name) == 0) {  
+        ptr = ptr->next;
+    }
+    
+    if (ptr == NULL) {  // Jika node dengan id tersebut tidak ditemukan
+        printf("Bahan dengan nama %s tidak ditemukan.\n", name);
+        return;
+    }
+
+    // Step 5: 
+    struct Barang* temp = ptr->prev;
+
+    // Jika barang didalam node tersebut yang dihapus adalah node pertama (head)
     if (ptr == *head) {
-        *head = ptr->next;
+        *head = ptr->next;  // Ubah head ke node berikutnya
+        if (*head != NULL) {
+            (*head)->prev = NULL;  // Jika head baru ada, set prev-nya ke NULL
+        }
+    } else {
+        // Step 6 dan Step 7: Update pointer node
+        if (ptr->next != NULL) {  
+            ptr->next->prev = temp;
+        }
+        if (temp != NULL) {  // Update link dari node sebelumnya
+            temp->next = ptr->next;
+        }
     }
-
-    // Menghubungkan node sebelumnya dengan node berikutnya
-    if (ptr->prev != NULL) {
-        ptr->prev->next = ptr->next;
-    }
-
-    if (ptr->next != NULL) {
-        ptr->next->prev = ptr->prev;
-    }
-
-    // Membebaskan memori dari node yang dihapus
-    free(ptr);
-
-    printf("Node dengan nama %s berhasil dihapus.\n", name);
-
-
-
+    // Step 8: Bebaskan memori dari node yang dihapus
+    free(ptr);  
+    printf("\n Barang dengan nama %s telah dihapus.\n", name);
 }
-struct Barang* cariBarang(struct Barang* head, char*name) {
+
+
+struct Barang* cariBarangByName(struct Barang* head, char*name) {
+    struct Barang* temp = head;
+    //cek nama pada linked list
+    while (temp != NULL) {
+        //karna variable name merupakan array string maka harus dicopy dulu
+        if (strcmp(temp->name,name)== 0) {
+            return temp;
+        }
+        temp = temp->next;
+    }
+    return NULL; // Jika tidak ditemukan
+}
+//fungsi caribarang berdasarkan id
+// sama seperti fungsi sebelumnnya tapi ini kita get by id nya
+struct Barang* cariBarangById(struct Barang* head, int id) {
     struct Barang* temp = head;
     while (temp != NULL) {
-        if (strcmp(temp->name,name)== 0) {
+        if (temp->id== id) {
             return temp;
         }
         temp = temp->next;
@@ -113,11 +137,40 @@ struct Barang* cariBarang(struct Barang* head, char*name) {
 
 
 
+
+// Simpan barang ke dalam sebuah file
+void simpanDaftarBarang(struct Barang* head, const char* filename) {
+    FILE* file = fopen(filename, "w");
+    if (file == NULL) {
+        printf("Gagal membuka file untuk menulis.\n");
+        return;
+    }
+
+    struct Barang* ptr = head;
+    while (ptr != NULL) {
+        fprintf(file, "%d %s %d %.2f\n", ptr->id, ptr->name, ptr->stock, ptr->price);
+        ptr = ptr->next;
+    }
+
+    fclose(file);
+    printf("Data bahan berhasil disimpan ke file %s.\n", filename);
+}
+
+
+
 void CetakBarang(struct Barang *barang){
     while (barang != NULL) {
          printf("ID: %d, Nama: %s, Stock: %d, Harga: %.2f\n", barang->id, barang->name, barang->stock, barang->price);
         barang = barang->next;
     }
+}
+//fungsi input name
+//kenapa kita tidak menggunakan input name seperti input data yang lainnya karna kita ingin meninput lebih dari satu kata ketika memasukan nama barang  
+void InputName(char *name,int size){ 
+    while (getchar() != '\n');  
+    fgets(name, size, stdin);
+    name[strcspn(name, "\n")] = '\0';
+
 }
 
 int main(){
@@ -132,10 +185,12 @@ int main(){
      do {
         printf("\nMenu:\n");
         printf("1. Tambah bahan di awal\n");
-        printf("2. Hapus bahan\n");
-        printf("3. Tampilkan semua bahan\n");
-        printf("4. CariBarang berdasarkan nama\n");
-        printf("5. Keluar\n");
+        printf("2. Tampilkan semua bahan\n");
+        printf("3. Hapus barang berdasarkan nama\n");
+        printf("4. Simpan barang ke dalam file\n");
+        printf("5. CariBarang berdasarkan nama\n");
+        printf("6  Cari barang berdasarkan id\n");
+        printf("7. Keluar\n");
         printf("Pilih menu: ");
         scanf("%d", &pilihan);
 
@@ -143,8 +198,9 @@ int main(){
             case 1:
                 printf("Masukan id barang: ");
                 scanf("%d",&id);
-                printf("Masukkan nama barang: ");
-                scanf("%s", name);
+                printf("Masukan nama barang: ");
+                InputName(name,sizeof(name));
+                
                 printf("Masukkan jumlah stock: ");
                 scanf("%d", &stock);
                 printf("Masukkan harga: ");
@@ -152,33 +208,50 @@ int main(){
                 TambahkanBarangAwal(&head,id, name, stock,price);
                 break;
             case 2:
-                printf("Masukkan nama barang yang ingin dihapus: ");
-                scanf("%s", name);
-                hapusBarang(&head, name);
-                break;
-            case 3:
                 printf("Daftar bahan sembako:\n");
                 CetakBarang(head);
                 break;
+            case 3:
+                printf("Masukkan nama barang yang ingin dihapus: ");
+                scanf("%s", name);
+                hapusBarangByName(&head, name);
+                break;
+
             case 4:
-                printf("Cari Barang berdasarkan Nama: \n");
-                scanf("%s",name);
-                struct Barang* barang = cariBarang(head, name);
+                simpanDaftarBarang(head, "data_bahan.txt");
+                break;
+          
+            case 5:
+                printf("Masukan nama barang: ");
+                InputName(name,sizeof(name));
+                struct Barang* barangName = cariBarangByName(head, name);
+                CetakBarang(barangName);
+                if (barangName != NULL) {
+                    printf("Barang ditemukan:\n");
+                    printf("ID: %d\nNama: %s\nStock: %d\nHarga: %.2f\n", barangName->id, barangName->name, barangName->stock, barangName->price);
+                 } else {
+               printf("Barang dengan nama %s tidak ditemukan.\n", name);
+              }
+                break;
+            case 6:
+                printf("masukan ID Barang: \n");
+                scanf("%d",&id);
+                struct Barang* barang = cariBarangById(head, id);
                 CetakBarang(barang);
                 if (barang != NULL) {
                     printf("Barang ditemukan:\n");
                     printf("ID: %d\nNama: %s\nStock: %d\nHarga: %.2f\n", barang->id, barang->name, barang->stock, barang->price);
                  } else {
-               printf("Barang dengan nama %s tidak ditemukan.\n", name);
+               printf("Barang dengan id %d tidak ditemukan.\n", id);
               }
                 break;
-            case 5:
+            case 7:
                 printf("Keluar dari program.\n");
                 break;
             default:
                 printf("Pilihan tidak valid!\n");
         }
-    } while (pilihan != 5);
+    } while (pilihan != 7);
 
     return 0;
 }
